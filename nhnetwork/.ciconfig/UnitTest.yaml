@@ -1,0 +1,8 @@
+UT: yes
+unittest:
+    - entry: gtstlibnhnetworkhandler
+      type: gtest
+      device_type: emulator
+      tgt_src_pth: system/handler/nhnetwork/
+      target:
+           - libnhnetworkhandler.so

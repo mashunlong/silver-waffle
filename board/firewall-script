@@ -1,0 +1,33 @@
+#!/bin/sh
+# This script is used to set default rules for network firewall.
+
+# Clear NAT table and mangle table.
+iptables -t nat -F
+iptables -t mangle -F
+echo 1 > /proc/sys/net/ipv4/ip_forward
+IF_WLAN="wlan0"
+
+mode=$1
+
+# Start hotspot at DCU
+if [ ${mode} -eq 0 ] ; then
+device=$2
+iptables -t mangle -A PREROUTING -i $IF_WLAN -j MARK --set-mark 11
+iptables -t nat -A POSTROUTING ! -d 192.168.128.128/30 -o $device -p tcp -m mark --mark 11 -j MASQUERADE --to-ports 57000-57999 --random
+iptables -t nat -A POSTROUTING ! -d 192.168.128.128/30 -o $device -p udp -m mark --mark 11 -j MASQUERADE --to-ports 57000-57999 --random
+iptables -t nat -A POSTROUTING ! -d 192.168.128.128/30 -o $device -m mark --mark 11 -j MASQUERADE --random
+iptables -t nat -A POSTROUTING ! -d 192.168.128.128/30 -o $device -p tcp -j MASQUERADE --to-ports 50000-50999 --random
+iptables -t nat -A POSTROUTING ! -d 192.168.128.128/30 -o $device -p udp -j MASQUERADE --to-ports 50000-50999 --random
+exit 0
+fi
+
+# DCU access network by wifiSta or btDun
+if [ ${mode} -eq 1 ] ; then
+device=$2
+ip=$3
+iptables -t nat -A POSTROUTING ! -s $ip -o $device -j MASQUERADE
+exit 0
+fi
+
+
+

@@ -1,0 +1,32 @@
+key "rndc-key" {
+ algorithm hmac-md5;
+ secret "I6sRPJVhwQoDnZoOM4/h+g==";
+ };
+
+ controls {
+ inet 127.0.0.1 port 953
+ allow { 127.0.0.1; }
+ keys { "rndc-key"; };
+ };
+
+options {
+    directory "/var";
+    pid-file "named.pid";
+
+    listen-on port 53 { localnets;};
+    allow-query       { localnets;};
+    allow-query-cache { localnets;};
+
+    max-cache-ttl 600;
+
+    forwarders { 114.114.114.114; };
+
+    dump-file   "/var/cache_dump.db";
+};
+
+zone "g-book.com.cn" {
+    type forward;
+
+    forwarders { };
+};
+

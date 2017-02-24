@@ -1,0 +1,88 @@
+#!/bin/sh
+# This script runs last, after all network configuration
+# has completed. It sets a property to let the framework
+# know that setting up the interface is complete.
+
+# Set net.<iface>.dnsN properties that contain the
+# DNS server addresses given by the DHCP server.
+
+set_dns_props()
+{
+    case "${new_domain_name_servers}" in
+    "")   return 0;;
+    esac
+    len=${#new_domain_name_servers[@]}
+    count=1
+    for dnsaddr in ${new_domain_name_servers}; do
+        if [ $count -ne 1 ] ; then
+            temp=$(($count - 1))
+            setprop dhclient.dns${temp} ${dnsaddr}
+        fi
+     count=$(($count + 1))
+     done
+}
+
+unset_dns_props()
+{
+    for i in 1 2 3 4; do
+        value=`getprop net.${interface}.dns${i}`
+        if [ ${value}!="" ] ; then 
+        setprop dhclient.dns${i} ""
+        fi
+    done
+}
+
+check_dhclient_flag()
+{
+    flag=$(cat /tmp/dhclientFlag)
+    while [ $flag != "init" ] 
+    do 
+    usleep 500000
+    flag=$(cat /tmp/dhclientFlag)
+    done
+}
+
+case "${reason}" in
+BOUND|RENEW|REBIND|REBOOT)
+    check_dhclient_flag
+    echo start > /tmp/dhclientFlag
+    setprop dhclient.interface "${interface}"
+    setprop dhclient.ipaddr ${new_ip_address}
+    setprop dhclient.gateway ${new_routers}
+    setprop dhclient.server.identifier ${new_dhcp_server_identifier}
+    set_dns_props
+    setprop dhclient.status "running"
+    echo end > /tmp/dhclientFlag
+    ;;
+
+EXPIRE|FAIL|STOP)
+    check_dhclient_flag
+    echo start > /tmp/dhclientFlag
+    setprop dhclient.interface "${interface}"
+    setprop dhclient.ipaddr "0.0.0.0"
+    setprop dhclient.server.identifier "0.0.0.0"
+    setprop dhclient.gateway "0.0.0.0"
+    unset_dns_props
+    setprop dhclient.status "stopped"
+    echo end > /tmp/dhclientFlag
+    ;;
+
+RELEASE)
+    check_dhclient_flag
+    echo start > /tmp/dhclientFlag
+    setprop dhclient.interface "${interface}"
+    setprop dhclient.ipaddr "0.0.0.0"
+    setprop dhclient.server.identifier "0.0.0.0"
+    setprop dhclient.gateway "0.0.0.0"
+    unset_dns_props
+    setprop dhclient.status "stopped"
+    echo end > /tmp/dhclientFlag
+    ;;
+
+CANCEL)
+    check_dhclient_flag
+    echo start > /tmp/dhclientFlag
+    setprop dhclient.interface "${interface}"
+    setprop dhclient.status "cancel"
+    echo end > /tmp/dhclientFlag
+esac
