@@ -1,9 +1,0 @@
-UT: yes
-unittest:
-    - entry: gtstlibncnetworkmanager
-      type: gtest
-      device_type: emulator
-      tgt_src_pth: platform/service/NetworkManager/
-      target:
-           - libncnetworkmanager.so
-           - libncnetworkmanagerservice.so
